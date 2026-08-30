@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openclaw-prompt-antivirus"
+version = "0.1.0"
+description = "A defense toolkit against prompt injection / 'mind viruses' targeting LLM agents."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+authors = [{ name = "hm-pro assistant" }]
+keywords = ["llm", "prompt-injection", "security", "ai-agent", "antivirus", "jailbreak"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Security",
+    "Development Status :: 3 - Alpha",
+]
+
+[project.scripts]
+prompt-antivirus = "prompt_antivirus.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["prompt_antivirus*"]
