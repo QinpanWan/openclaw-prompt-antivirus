@@ -1,0 +1,25 @@
+# Build output
+dist/
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Local secrets (never commit)
+.env
+.env.*
+!*.example
+
+# Credentials
+.credentials/

@@ -1,0 +1,28 @@
+{
+  "id": "prompt-antivirus",
+  "name": "Prompt Antivirus",
+  "version": "0.1.0",
+  "description": "Runtime defense against prompt injection / 'mind-virus' attacks on OpenClaw agents: scans tool params, tool results (indirect injection), run input, and outbound messages; can block, require approval, or quarantine.",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": ["_antivirus_scan", "_antivirus_status"],
+    "trustedToolPolicies": ["prompt-antivirus.gate"]
+  },
+  "toolMetadata": {
+    "_antivirus_scan": { "optional": true },
+    "_antivirus_status": { "optional": true }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "mode": { "enum": ["block", "quarantine", "monitor"], "default": "quarantine" },
+      "blockDangerousTools": { "type": "boolean", "default": true },
+      "requireApprovalOnHighRisk": { "type": "boolean", "default": true },
+      "canaryEnabled": { "type": "boolean", "default": true },
+      "auditLog": { "type": "boolean", "default": true }
+    }
+  }
+}
