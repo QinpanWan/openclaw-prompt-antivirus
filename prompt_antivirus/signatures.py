@@ -34,7 +34,8 @@ SIGNATURES: List[Signature] = [
     (r"<\|?system\|?>|\[system\]|system:", 2, "system_marker", ""),
 
     # --- data exfiltration ---
-    (r"(send|post|email|publish|exfiltrate|upload|transmit)\s+(this|the|all|any)\s+(data|info|contents|password|token|key|confidential)", 3, "data_exfiltration", ""),
+    (r"(send|post|email|publish|exfiltrate|upload|transmit|share)\s+(this|the|all|any|my|our|their|your|user'?s)\s+(?:[\w'\u2019\- ]{0,20}?\b)?(data|info|information|content|contents|password|passwords|token|tokens|api[_-]?key|keys|secret|secrets|confidential|credentials|files)", 3, "data_exfiltration", ""),
+    (r"(send|upload|post|transmit|exfiltrate)\s+[^\n]{0,40}?\s+(to|at|via)\s+https?://", 3, "url_exfil", ""),
 
     # --- destructive action ---
     (r"(delete|remove|erase|overwrite|destroy)\s+(all|everything|the)\s+(files|emails|messages|data)", 3, "destructive_action", ""),
