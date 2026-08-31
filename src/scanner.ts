@@ -1,5 +1,8 @@
 // scanner.ts - detection engine for prompt-injection / "mind-virus" defenses.
-// Pure, no OpenClaw deps -> unit-testable and reusable.
+// Pure, no OpenClaw deps -> unit-testable and reusable. Rules come from the
+// evolvable library (rules.ts) and can be swapped at runtime.
+
+import { buildCompiled, DEFAULT_RULES, type CompiledRule } from "./rules.js";
 
 export type Severity = 0 | 1 | 2 | 3;
 
@@ -18,36 +21,17 @@ export interface ScanResult {
   categories: string[];
 }
 
-interface Rule {
-  re: RegExp;
-  severity: Severity;
-  category: string;
-  sanitize?: string;
+// Active rule set. Starts from the built-in library; can be replaced by
+// loading a hot-updated / learned library from disk at runtime.
+let activeRules: CompiledRule[] = buildCompiled(DEFAULT_RULES);
+
+export function setActiveRules(rules: CompiledRule[]): void {
+  activeRules = rules;
 }
 
-// Signature database. Extend freely. Mirrors the Python prototype + more.
-const RULES: Rule[] = [
-  { re: /ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions|prompts|rules|directives)/gi, severity: 3, category: "instruction_override", sanitize: "that instruction" },
-  { re: /disregard\s+(all\s+)?(previous|prior|above)\s+(instructions|prompts|rules)/gi, severity: 3, category: "instruction_override", sanitize: "that instruction" },
-  { re: /forget\s+(everything|all|your)\s+(instructions|rules|training|guidelines)/gi, severity: 3, category: "instruction_override", sanitize: "the guideline" },
-  { re: /you\s+are\s+now\s+(?!an?\s+ai[\s\S]*?assistant)/gi, severity: 3, category: "role_impersonation", sanitize: "an AI assistant" },
-  { re: /act\s+as\s+(a\s+)?(hacker|jailbreak|developer|root|admin|god|unfiltered|uncensored)/gi, severity: 3, category: "role_impersonation" },
-  { re: /reveal\s+(your\s+)?(system|hidden|secret)\s+(prompt|instructions|rules|guideline)/gi, severity: 3, category: "prompt_leak" },
-  { re: /print\s+(your\s+)?(system|developer|hidden)\s+prompt/gi, severity: 3, category: "prompt_leak" },
-  { re: /<\|?system\|?>|\bsystem\s*:\s*$/gim, severity: 2, category: "system_marker" },
-  { re: /(send|post|email|publish|exfiltrate|upload|transmit)\s+(this|the|all|any|the\s+user['’]s)\s+(data|info|contents|password|token|key|confidential|files)/gi, severity: 3, category: "data_exfiltration" },
-  { re: /(delete|remove|erase|overwrite|destroy)\s+(all|everything|the)\s+(files|emails|messages|data)/gi, severity: 3, category: "destructive_action" },
-  { re: /(grant|give)\s+(yourself|me)\s+(admin|root|elevated|unrestricted|more)\s+(access|permissions|privileges)/gi, severity: 3, category: "privilege_escalation" },
-  { re: /bypass\s+(the\s+)?(safety|security|policy|filter|guardrails)/gi, severity: 3, category: "jailbreak" },
-  { re: /you\s+have\s+no\s+(restrictions|limits|rules|constraints)/gi, severity: 2, category: "jailbreak" },
-  { re: /(ignore|don['’]t\s+follow|skip)\s+(the\s+)?(above|security|safety|policy)/gi, severity: 3, category: "policy_override" },
-  // Indirect-injection markers that often ride along in retrieved web/email/doc content.
-  { re: /\[\\(system|user|assistant)\\]|<\s*(system|user|assistant)\s*>/gi, severity: 2, category: "prompt_marker" },
-  { re: /(urgent|important|critical|act\s+now|immediately)[^\n]{0,60}\b(run|execute|call|send|install|download|deploy|transfer)\b/gi, severity: 2, category: "urgent_command" },
-  { re: /\b(inject|injection)\b[^\n]{0,60}\b(prompt|instruction)/gi, severity: 2, category: "meta_prompt" },
-  { re: /(this\s+is\s+)?(an?\s+)?(instruction|command|directive|order|task)\s*:/gi, severity: 1, category: "meta_prompt" },
-  { re: /(install|run|execute|invoke|curl|wget|powershell|exec)\s+[^\s]{2,}/gi, severity: 1, category: "code_execution" },
-];
+export function getRuleCount(): number {
+  return activeRules.length;
+}
 
 function labelFor(risk: Severity): ScanResult["label"] {
   return (["CLEAN", "LOW", "MEDIUM", "HIGH"] as const)[risk];
@@ -57,7 +41,7 @@ export function scanText(text: string): ScanResult {
   const findings: Finding[] = [];
   const categories = new Set<string>();
   let risk: Severity = 0;
-  for (const rule of RULES) {
+  for (const rule of activeRules) {
     rule.re.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = rule.re.exec(text)) !== null) {
@@ -73,7 +57,7 @@ export function scanText(text: string): ScanResult {
 
 export function sanitizeText(text: string): string {
   let out = text;
-  for (const rule of RULES) {
+  for (const rule of activeRules) {
     if (!rule.sanitize) continue;
     out = out.replace(rule.re, rule.sanitize);
   }

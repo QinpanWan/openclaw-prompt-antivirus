@@ -8,8 +8,11 @@ import {
   scanToolParams,
   sanitizeText,
   DANGEROUS_TOOLS,
+  setActiveRules,
+  getRuleCount,
   type ScanResult,
 } from "./scanner.js";
+import { buildCompiled, loadRules, learnFromSample, rulesPath, type LearnResult } from "./rules.js";
 
 interface Config {
   mode: "block" | "quarantine" | "monitor";
@@ -57,6 +60,9 @@ export default definePluginEntry({
   name: "Prompt Antivirus",
   description: "Runtime defense against prompt-injection / mind-virus attacks on OpenClaw agents.",
   register(api) {
+    // Load the evolvable rule library (disk-backed, hot-updatable) at startup.
+    setActiveRules(buildCompiled(loadRules()));
+
     const cfg = (): Config => {
       const c = (api.config as Partial<Config>) ?? {};
       return {
@@ -208,6 +214,29 @@ export default definePluginEntry({
         parameters: Type.Object({}),
         async execute(_id) {
           return { content: [{ type: "text", text: JSON.stringify({ config: cfg(), audit: audit.slice(-20) }, null, 2) }], details: {} };
+        },
+      },
+      { optional: true },
+    );
+
+    // ---- Learn: absorb a new (evaded) attack sample into the library ----
+    api.registerTool(
+      {
+        name: "_antivirus_learn",
+        label: "Antivirus Learn",
+        description: "Feed a sample that evaded detection; the plugin learns it into the on-disk signature library so future similar attempts are caught.",
+        parameters: Type.Object({
+          sample: Type.String(),
+          category: Type.Optional(Type.String()),
+        }),
+        async execute(_id, params) {
+          const p = params as { sample: string; category?: string };
+          const res: LearnResult = learnFromSample(p.sample, p.category);
+          setActiveRules(buildCompiled(loadRules()));
+          return {
+            content: [{ type: "text", text: JSON.stringify({ learned: res.added, reason: res.reason, rule: res.rule, rulesPath: rulesPath(), ruleCount: getRuleCount() }, null, 2) }],
+            details: {},
+          };
         },
       },
       { optional: true },
