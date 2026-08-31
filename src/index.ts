@@ -61,7 +61,7 @@ export default definePluginEntry({
       const c = (api.config as Partial<Config>) ?? {};
       return {
         mode: c.mode ?? "quarantine",
-        blockDangerousTools: c.blockDangerousTools ?? true,
+        blockDangerousTools: c.blockDangerousTools ?? false,
         requireApprovalOnHighRisk: c.requireApprovalOnHighRisk ?? true,
         canaryEnabled: c.canaryEnabled ?? true,
         auditLog: c.auditLog ?? true,

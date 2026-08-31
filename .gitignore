@@ -23,3 +23,6 @@ Thumbs.db
 
 # Credentials
 .credentials/
+
+# Local pack artifacts
+*.tgz
