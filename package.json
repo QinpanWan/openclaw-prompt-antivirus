@@ -15,6 +15,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json && openclaw plugins build --entry ./dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "validate": "openclaw plugins validate --entry ./dist/index.js"
   },
   "openclaw": {

@@ -11,6 +11,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-ESM-blue.svg)](https://github.com/QinpanWan/openclaw-prompt-antivirus)
 [![OpenClaw Plugin](https://img.shields.io/badge/OpenClaw-plugin-9146FF.svg)](#)
 [![Zero-config](https://img.shields.io/badge/zero--config-yes-brightgreen.svg)](#)
+[![CI](https://img.shields.io/github/actions/workflow/status/QinpanWan/openclaw-prompt-antivirus/ci.yml?branch=main)](#)
 
 **Give it a ⭐ if it helps you avoid a hijacked agent.**
 
