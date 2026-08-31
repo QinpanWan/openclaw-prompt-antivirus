@@ -157,3 +157,63 @@ export function learnFromSample(text: string, hintCategory?: string): LearnResul
   const ok = saveRules(next);
   return ok ? { added: true, rule, reason: "learned" } : { added: false, reason: "persist-failed" };
 }
+
+// ---- Library exchange (community-shared signatures) ----
+// Export the current library as a portable JSON string so users can share
+// learned signatures between installations, like antivirus definition swaps.
+export function exportRules(): string {
+  return JSON.stringify(loadRules(), null, 2);
+}
+
+// Merge an external library (JSON string or parsed RuleSpec[]) into the local one,
+// de-duplicating by regex source. Returns how many rules were added.
+export function importRules(input: string | RuleSpec[]): { added: number; skipped: number } {
+  let incoming: RuleSpec[];
+  try {
+    incoming = typeof input === "string" ? (JSON.parse(input) as RuleSpec[]) : input;
+  } catch (e) {
+    throw new Error(`invalid rules JSON: ${(e as Error).message}`);
+  }
+  if (!Array.isArray(incoming)) throw new Error("rules must be an array");
+
+  const current = loadRules();
+  const seen = new Set<string>(current.map((r) => r.re));
+  let added = 0;
+  let skipped = 0;
+  for (const spec of incoming) {
+    // Validate shape and skip malformed/falsey entries.
+    if (!spec || typeof spec.re !== "string" || !spec.category) {
+      skipped++;
+      continue;
+    }
+    if (seen.has(spec.re)) {
+      skipped++;
+      continue;
+    }
+    current.push({
+      re: spec.re,
+      flags: spec.flags ?? "gi",
+      severity: (typeof spec.severity === "number" ? spec.severity : 1) as Severity,
+      category: spec.category,
+      sanitize: spec.sanitize,
+    });
+    seen.add(spec.re);
+    added++;
+  }
+  saveRules(current);
+  return { added, skipped };
+}
+
+// Convenience: normalize a parsed external array so callers can inspect it.
+export function validateRules(input: unknown): { valid: boolean; count: number; errors: string[] } {
+  const errors: string[] = [];
+  if (!Array.isArray(input)) {
+    return { valid: false, count: 0, errors: ["not an array"] };
+  }
+  for (const [i, r] of (input as RuleSpec[]).entries()) {
+    if (!r || typeof r.re !== "string") errors.push(`entry ${i}: missing re`);
+    else if (typeof r.category !== "string") errors.push(`entry ${i}: missing category`);
+    else if (typeof r.severity !== "number" || r.severity < 0 || r.severity > 3) errors.push(`entry ${i}: severity out of range`);
+  }
+  return { valid: errors.length === 0, count: (input as RuleSpec[]).length, errors };
+}

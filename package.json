@@ -1,6 +1,6 @@
 {
   "name": "@entity-him/openclaw-prompt-antivirus",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Runtime defense against prompt-injection / 'mind-virus' attacks on OpenClaw agents.",
   "dependencies": {

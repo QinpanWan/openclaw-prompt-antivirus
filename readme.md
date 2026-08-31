@@ -74,6 +74,42 @@ That's it. The plugin auto-loads and starts scanning.
 
 `src/index.ts` wires the scanner into the runtime via `api.on(...)` hooks and a `registerTrustedToolPolicy(...)` gate.
 
+## 🧬 Evolving the library (learn new attacks)
+
+The signature library is **external and updatable** — it lives on disk at
+`rules/virus-signatures.json`, not baked into the code. That means you can
+**grow it without recompiling**, and the plugin **learns from real attacks**.
+
+### Feed a sample that evaded detection
+
+If you spot a prompt-injection attempt that got through, teach it to the
+plugin with `_antivirus_learn`:
+
+```
+_antivirus_learn(sample: "<the evaded attack text>", category?: "instruction_override")
+```
+
+The plugin extracts a signature, de-duplicates against the current library, and
+**persists it to disk** — so the next similar attempt is caught automatically.
+
+### Share learned signatures (community library exchange)
+
+Like antivirus definition swaps, you can export and import libraries between
+installations:
+
+```
+_antivirus_rules_export   →  prints the current library as JSON string
+_antivirus_rules_import(rules: "<JSON string>")   →  merges into local library
+```
+
+`import` validates the payload and merges new entries (de-duplicated by regex
+source), returning how many were added vs skipped. Paste an exported library
+into a different installation to give it the same protection.
+
+The diagnostic tools `_antivirus_scan`, `_antivirus_status`, `_antivirus_learn`,
+`_antivirus_rules_export`, and `_antivirus_rules_import` are opt-in; enable them
+with `tools.allow`.
+
 ## ⚙️ Configuration
 
 ```json5

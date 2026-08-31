@@ -12,7 +12,7 @@ import {
   getRuleCount,
   type ScanResult,
 } from "./scanner.js";
-import { buildCompiled, loadRules, learnFromSample, rulesPath, type LearnResult } from "./rules.js";
+import { buildCompiled, loadRules, learnFromSample, exportRules, importRules, validateRules, rulesPath, type LearnResult } from "./rules.js";
 
 interface Config {
   mode: "block" | "quarantine" | "monitor";
@@ -237,6 +237,45 @@ export default definePluginEntry({
             content: [{ type: "text", text: JSON.stringify({ learned: res.added, reason: res.reason, rule: res.rule, rulesPath: rulesPath(), ruleCount: getRuleCount() }, null, 2) }],
             details: {},
           };
+        },
+      },
+      { optional: true },
+    );
+
+    // ---- Export / import library (community-shared signatures) ----
+    api.registerTool(
+      {
+        name: "_antivirus_rules_export",
+        label: "Antivirus Rules Export",
+        description: "Export the current on-disk signature library as a JSON string, for sharing learned signatures between installations.",
+        parameters: Type.Object({}),
+        async execute(_id) {
+          const exported = exportRules();
+          return { content: [{ type: "text", text: exported }], details: { ruleCount: getRuleCount(), rulesPath: rulesPath() } };
+        },
+      },
+      { optional: true },
+    );
+
+    api.registerTool(
+      {
+        name: "_antivirus_rules_import",
+        label: "Antivirus Rules Import",
+        description: "Merge an external signature library (JSON string) into the local one, de-duplicating by regex source.",
+        parameters: Type.Object({ rules: Type.String() }),
+        async execute(_id, params) {
+          const p = params as { rules: string };
+          try {
+            const validation = validateRules(JSON.parse(p.rules));
+            if (!validation.valid) {
+              return { content: [{ type: "text", text: `Import rejected: ${validation.errors.join("; ")}` }], details: {} };
+            }
+            const result = importRules(p.rules);
+            setActiveRules(buildCompiled(loadRules()));
+            return { content: [{ type: "text", text: JSON.stringify({ added: result.added, skipped: result.skipped, ruleCount: getRuleCount() }, null, 2) }], details: {} };
+          } catch (e) {
+            return { content: [{ type: "text", text: `Import failed: ${(e as Error).message}` }], details: {} };
+          }
         },
       },
       { optional: true },
