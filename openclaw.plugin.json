@@ -1,7 +1,7 @@
 {
   "id": "prompt-antivirus",
   "name": "Prompt Antivirus",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Runtime defense against prompt injection / 'mind-virus' attacks on OpenClaw agents: scans tool params, tool results (indirect injection), run input, and outbound messages; can block, require approval, or quarantine.",
   "activation": {
     "onStartup": true
